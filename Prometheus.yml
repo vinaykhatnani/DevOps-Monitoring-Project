@@ -1,0 +1,47 @@
+# Global Configuration
+global:
+  scrape_interval: 15s            # Scrape metrics every 15 seconds (default is 1 minute)
+  evaluation_interval: 15s        # Evaluate alerting rules every 15 seconds
+  # scrape_timeout is set to the global default (10s)
+
+# Alertmanager Configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'localhost:9093'    # Alertmanager is running locally
+
+# Rule Files
+rule_files:
+  - "alert_rules.yml"             # Primary alert rules file
+  # - "second_rules.yml"          # Uncomment to include additional rules
+
+# Scrape Configuration
+scrape_configs:
+  # Prometheus Itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Node Exporter
+  - job_name: "node_exporter"
+    static_configs:
+      - targets: ["3.110.195.114:9100"]  # Node Exporter on second VM
+
+  # Blackbox Exporter
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]                 # Use the HTTP 200 response module
+    static_configs:
+      - targets:
+          - http://prometheus.io        # Example HTTP target
+          - https://prometheus.io       # Example HTTPS target
+          - http://3.110.195.114:8080/  # Local website on VM2
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 13.235.248.225:9115  # Blackbox Exporter address
